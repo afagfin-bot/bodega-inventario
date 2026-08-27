@@ -801,20 +801,27 @@ document.getElementById("priceSearch").addEventListener("input", renderPrecios);
 document.getElementById("priceSort").addEventListener("change", renderPrecios);
 
 /* ---------- Render: Rotación ---------- */
+const ROTATION_STATUS_ORDER = {bad:0, warn:1, good:2, neutral:3};
+
 function renderRotacion(){
   const rows = DATA.map(p=>{
     const last = lastEntry(p);
     const ds = last ? daysSince(last.date) : null;
-    let status, cls, pct;
-    if(ds===null){ status="Sin dato de fecha"; cls="neutral"; pct=0; }
+    let status, cls, pct, ratio;
+    if(ds===null){ status="Sin dato de fecha"; cls="neutral"; pct=0; ratio=-1; }
     else{
-      pct = Math.min(100, (ds/p.rotationDays)*100);
+      ratio = ds/p.rotationDays;
+      pct = Math.min(100, ratio*100);
       if(ds >= p.rotationDays){ status="Atrasado"; cls="bad"; }
       else if(ds >= p.rotationDays*0.7){ status="Por vencer ciclo"; cls="warn"; }
       else{ status="Al día"; cls="good"; }
     }
-    return {p, last, ds, status, cls, pct};
-  }).sort((a,b)=> (b.ds===null?-1:b.ds) - (a.ds===null?-1:a.ds));
+    return {p, last, ds, status, cls, pct, ratio};
+  }).sort((a,b)=>{
+    const byStatus = ROTATION_STATUS_ORDER[a.cls] - ROTATION_STATUS_ORDER[b.cls];
+    if(byStatus !== 0) return byStatus;
+    return b.ratio - a.ratio; // dentro del mismo estado, más cerca/lejos del ciclo primero según el día de la compra
+  });
 
   document.getElementById("rotTableBody").innerHTML = rows.map(r=>`
     <tr>
