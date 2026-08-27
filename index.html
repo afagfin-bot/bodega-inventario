@@ -24,6 +24,12 @@
   --bad:#A13D2E;
   --bad-bg:#F3DCD5;
   --radius:10px;
+  --radius-md:12px;
+  --radius-lg:18px;
+  --shadow-sm:0 1px 2px rgba(31,59,48,.07),0 1px 1px rgba(31,59,48,.04);
+  --shadow-md:0 6px 16px rgba(31,59,48,.10),0 2px 4px rgba(31,59,48,.05);
+  --shadow-lg:0 14px 32px rgba(31,59,48,.14);
+  --transition:.18s ease;
 }
 *{box-sizing:border-box;}
 body{
@@ -39,8 +45,13 @@ body{
 header.top{
   display:flex;justify-content:space-between;align-items:flex-end;
   gap:20px;flex-wrap:wrap;
-  border-bottom:3px solid var(--primary);
-  padding-bottom:18px;margin-bottom:22px;
+  position:relative;
+  padding-bottom:20px;margin-bottom:24px;
+}
+header.top::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:linear-gradient(90deg,var(--primary) 0%,var(--primary) 40%,var(--accent) 100%);
+  border-radius:3px;
 }
 .brand-eyebrow{
   font-family:'IBM Plex Mono',monospace;
@@ -69,11 +80,12 @@ h1{
   text-transform:uppercase;font-size:13.5px;
   background:none;border:none;cursor:pointer;
   color:var(--ink-soft);padding:10px 16px;
+  border-radius:8px 8px 0 0;
   border-bottom:3px solid transparent;
-  transition:color .15s, border-color .15s;
+  transition:color var(--transition), border-color var(--transition), background var(--transition);
 }
-.tab-btn:hover{color:var(--primary);}
-.tab-btn.active{color:var(--primary);border-color:var(--accent);}
+.tab-btn:hover{color:var(--primary);background:rgba(31,59,48,.05);}
+.tab-btn.active{color:var(--primary);border-color:var(--accent);background:rgba(198,134,43,.08);}
 
 .view{display:none;animation:fade .2s ease;}
 .view.active{display:block;}
@@ -82,9 +94,12 @@ h1{
 /* KPI cards */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:22px;}
 .kpi{
-  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);
   padding:16px 18px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-sm);
+  transition:transform var(--transition), box-shadow var(--transition);
 }
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
 .kpi::before{
   content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--primary);
 }
@@ -94,13 +109,19 @@ h1{
 .kpi .val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;margin-top:6px;color:var(--ink);}
 
 .panel{
-  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);
   padding:20px;margin-bottom:20px;
+  box-shadow:var(--shadow-sm);
 }
 .panel h2{
   font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:16px;
-  letter-spacing:.04em;color:var(--primary);margin:0 0 14px;
-  display:flex;align-items:center;gap:8px;
+  letter-spacing:.04em;color:var(--primary);margin:0 0 16px;
+  display:flex;align-items:center;gap:10px;
+}
+.panel h2::after{
+  content:"";flex:1;height:2px;
+  background:linear-gradient(90deg,var(--line),transparent);
+  border-radius:2px;
 }
 
 /* category bars */
@@ -117,15 +138,20 @@ input[type="text"],input[type="search"],select,input[type="number"],input[type="
   border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);
 }
 input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
 
 /* table */
 table{width:100%;border-collapse:collapse;font-size:13.5px;}
 th{
   text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;
   text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);
-  padding:8px 10px;border-bottom:2px solid var(--line);font-weight:600;
+  padding:10px;background:#E7E9DA;border-bottom:2px solid var(--line);font-weight:600;
 }
-td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+th:first-child{border-top-left-radius:7px;}
+th:last-child{border-top-right-radius:7px;}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;transition:background var(--transition);}
 tr:hover td{background:#F1F2E6;}
 
 .tag{
@@ -143,8 +169,9 @@ tr:hover td{background:#F1F2E6;}
   width:24px;height:24px;border-radius:5px;border:1px solid var(--line);
   background:#fff;cursor:pointer;font-weight:700;color:var(--primary);
   font-family:'IBM Plex Mono',monospace;line-height:1;
+  transition:background var(--transition), transform var(--transition);
 }
-.stock-ctrl button:hover{background:var(--accent-soft);}
+.stock-ctrl button:hover{background:var(--accent-soft);transform:translateY(-1px);}
 .stock-ctrl .qty{font-family:'IBM Plex Mono',monospace;min-width:34px;text-align:center;font-weight:600;}
 
 .pill-cat{
@@ -174,15 +201,18 @@ tr:hover td{background:#F1F2E6;}
 /* buy list */
 .shop-item{
   display:flex;justify-content:space-between;align-items:center;
-  padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff;
+  padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:8px;background:#fff;
+  transition:box-shadow var(--transition), transform var(--transition);
 }
+.shop-item:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px);}
 .shop-item .why{font-size:11.5px;color:var(--ink-soft);}
 .btn{
   font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.03em;
   font-size:12.5px;background:var(--primary);color:#fff;border:none;border-radius:7px;
   padding:9px 16px;cursor:pointer;
+  transition:background var(--transition), transform var(--transition), box-shadow var(--transition);
 }
-.btn:hover{background:var(--primary-soft);}
+.btn:hover{background:var(--primary-soft);transform:translateY(-1px);box-shadow:var(--shadow-sm);}
 .btn.secondary{background:none;border:1px solid var(--primary);color:var(--primary);}
 .btn.secondary:hover{background:var(--primary);color:#fff;}
 .btn.accentbtn{background:var(--accent);}
@@ -215,7 +245,7 @@ footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:ce
     <div class="header-stat">
       <div class="num mono" id="hdrTotalValue">$0</div>
       <div class="lbl">Valor estimado en bodega</div>
-      <div class="lbl" id="saveStatus" style="margin-top:4px;"></div>
+      <div class="lbl" id="saveStatus" role="status" aria-live="polite" style="margin-top:4px;"></div>
     </div>
   </header>
 
@@ -245,9 +275,9 @@ footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:ce
   <div class="view" id="view-inventario">
     <div class="panel">
       <div class="controls">
-        <input type="search" id="invSearch" placeholder="Buscar producto…" style="min-width:220px;">
-        <select id="invCatFilter"><option value="">Todas las categorías</option></select>
-        <select id="invStatusFilter">
+        <input type="search" id="invSearch" placeholder="Buscar producto…" aria-label="Buscar producto en inventario" style="min-width:220px;">
+        <select id="invCatFilter" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option></select>
+        <select id="invStatusFilter" aria-label="Filtrar por estado de stock">
           <option value="">Todo el stock</option>
           <option value="bajo">Solo stock bajo</option>
         </select>
@@ -266,8 +296,8 @@ footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:ce
   <div class="view" id="view-precios">
     <div class="panel">
       <div class="controls">
-        <input type="search" id="priceSearch" placeholder="Buscar producto…" style="min-width:220px;">
-        <select id="priceSort">
+        <input type="search" id="priceSearch" placeholder="Buscar producto…" aria-label="Buscar producto en precios" style="min-width:220px;">
+        <select id="priceSort" aria-label="Ordenar lista de precios">
           <option value="name">Ordenar: nombre</option>
           <option value="value">Ordenar: mayor precio</option>
           <option value="change">Ordenar: mayor variación</option>
@@ -309,48 +339,48 @@ footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:ce
       <h2>Registrar una nueva compra</h2>
       <div class="form-grid">
         <div class="field">
-          <label>Producto existente</label>
+          <label for="fProductSelect">Producto existente</label>
           <select id="fProductSelect"><option value="">— Nuevo producto —</option></select>
         </div>
         <div class="field">
-          <label>Nombre del producto</label>
+          <label for="fName">Nombre del producto</label>
           <input type="text" id="fName" placeholder="Ej. Arroz blanco">
         </div>
         <div class="field">
-          <label>Categoría</label>
+          <label for="fCategory">Categoría</label>
           <select id="fCategory"></select>
         </div>
         <div class="field">
-          <label>Unidad</label>
+          <label for="fUnit">Unidad</label>
           <input type="text" id="fUnit" placeholder="Ej. bolsa, unidad, kg">
         </div>
         <div class="field">
-          <label>Tienda</label>
+          <label for="fStore">Tienda</label>
           <input type="text" id="fStore" placeholder="Ej. Éxito Fabricato">
         </div>
         <div class="field">
-          <label>Precio total pagado (COP)</label>
+          <label for="fPrice">Precio total pagado (COP)</label>
           <input type="number" id="fPrice" placeholder="0">
         </div>
         <div class="field">
-          <label>Cantidad comprada</label>
+          <label for="fQty">Cantidad comprada</label>
           <input type="number" id="fQty" value="1" min="0.01" step="0.01">
         </div>
         <div class="field">
-          <label>Fecha de compra</label>
+          <label for="fDate">Fecha de compra</label>
           <input type="date" id="fDate">
         </div>
         <div class="field">
-          <label>Ciclo de rotación esperado (días)</label>
+          <label for="fRotation">Ciclo de rotación esperado (días)</label>
           <input type="number" id="fRotation" placeholder="Ej. 14">
         </div>
         <div class="field">
-          <label>Mínimo antes de reordenar</label>
+          <label for="fThreshold">Mínimo antes de reordenar</label>
           <input type="number" id="fThreshold" value="1" min="0" step="0.01">
         </div>
       </div>
       <button class="btn accentbtn" id="fSubmit">Guardar compra</button>
-      <span class="muted small" id="fMsg" style="margin-left:12px;"></span>
+      <span class="muted small" id="fMsg" role="alert" aria-live="assertive" style="margin-left:12px;"></span>
     </div>
   </div>
 
@@ -361,7 +391,7 @@ footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:ce
         Restaurar respaldo
         <input type="file" id="fileImport" accept="application/json" style="display:none;">
       </label>
-      <span class="small muted" id="backupMsg" style="margin-left:8px;"></span>
+      <span class="small muted" id="backupMsg" role="alert" aria-live="assertive" style="margin-left:8px;"></span>
     </div>
     Los datos se guardan automáticamente en el almacenamiento local de este navegador (localStorage). Solo son visibles desde este mismo navegador y dispositivo — si abres el archivo en otro navegador o computador, no verás estos datos. Si el indicador dice "Respaldo automático activo", tu navegador no permitió guardar (modo privado, por ejemplo); usa el botón de respaldo para no perder tus cambios.
   </footer>
@@ -438,6 +468,12 @@ let lastAutoBackupTime = 0;
 const AUTO_BACKUP_COOLDOWN_MS = 15000;
 
 function fmt(n){ return "$"+Math.round(n).toLocaleString("es-CO"); }
+
+function escapeHtml(str){
+  return String(str==null?"":str).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[ch]));
+}
 
 function unitPrice(entry){ return entry.qty>0 ? entry.price/entry.qty : entry.price; }
 
@@ -585,7 +621,7 @@ function renderResumen(){
   const catBars = document.getElementById("catBars");
   catBars.innerHTML = Object.entries(catSpend).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
     <div class="cat-bar-row">
-      <div class="cat-name">${cat}</div>
+      <div class="cat-name">${escapeHtml(cat)}</div>
       <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${(val/maxCat*100).toFixed(1)}%"></div></div>
       <div class="cat-bar-val mono">${fmt(val)}</div>
     </div>
@@ -601,7 +637,7 @@ function renderResumen(){
   const attnList = document.getElementById("attentionList");
   attnList.innerHTML = attn.length ? attn.slice(0,10).map(a=>`
     <div class="shop-item">
-      <div><strong>${a.p.name}</strong><div class="why">${a.reason}</div></div>
+      <div><strong>${escapeHtml(a.p.name)}</strong><div class="why">${escapeHtml(a.reason)}</div></div>
       <span class="tag ${a.type}">${a.type==='bad'?'Reordenar':'Revisar rotación'}</span>
     </div>
   `).join("") : `<div class="empty-note">Todo está bajo control por ahora.</div>`;
@@ -632,17 +668,19 @@ function renderInventario(){
     const last = lastEntry(p);
     const uPrice = lastUnitPrice(p);
     const low = p.stock <= p.threshold;
+    const safeId = escapeHtml(p.id);
+    const safeName = escapeHtml(p.name);
     return `
     <tr>
-      <td><strong>${p.name}</strong><div class="small muted">${p.unit}</div></td>
-      <td><span class="pill-cat">${p.category}</span></td>
-      <td class="small">${last ? last.store : "—"}</td>
+      <td><strong>${safeName}</strong><div class="small muted">${escapeHtml(p.unit)}</div></td>
+      <td><span class="pill-cat">${escapeHtml(p.category)}</span></td>
+      <td class="small">${last ? escapeHtml(last.store) : "—"}</td>
       <td class="mono">${fmt(uPrice)}</td>
       <td>
         <div class="stock-ctrl">
-          <button data-act="dec" data-id="${p.id}">−</button>
+          <button data-act="dec" data-id="${safeId}" aria-label="Disminuir existencia de ${safeName}">−</button>
           <span class="qty">${p.stock}</span>
-          <button data-act="inc" data-id="${p.id}">+</button>
+          <button data-act="inc" data-id="${safeId}" aria-label="Aumentar existencia de ${safeName}">+</button>
         </div>
       </td>
       <td>${low ? `<span class="tag bad">Bajo · mín ${p.threshold}</span>` : `<span class="tag good">Suficiente</span>`}</td>
@@ -699,18 +737,18 @@ function renderPrecios(){
     <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
         <div>
-          <strong>${p.name}</strong>
-          <span class="pill-cat" style="margin-left:6px;">${p.category}</span>
+          <strong>${escapeHtml(p.name)}</strong>
+          <span class="pill-cat" style="margin-left:6px;">${escapeHtml(p.category)}</span>
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
-          <span class="mono" style="font-size:15px;">${fmt(uPrice)} / ${p.unit}</span>
+          <span class="mono" style="font-size:15px;">${fmt(uPrice)} / ${escapeHtml(p.unit)}</span>
           ${changeTag}
         </div>
       </div>
       <ul class="price-hist-list" style="margin-top:10px;">
-        ${p.history.map(h=>`<li><span>${h.store}${h.date?" · "+h.date:" · sin fecha"}</span><span class="mono">${fmt(h.price)} (${h.qty} ${p.unit} · ${fmt(unitPrice(h))}/u)</span></li>`).join("")}
+        ${p.history.map(h=>`<li><span>${escapeHtml(h.store)}${h.date?" · "+escapeHtml(h.date):" · sin fecha"}</span><span class="mono">${fmt(h.price)} (${h.qty} ${escapeHtml(p.unit)} · ${fmt(unitPrice(h))}/u)</span></li>`).join("")}
       </ul>
-      <div class="small muted" style="margin-top:6px;">Más barato en: <strong>${cheapest.store}</strong> (${fmt(unitPrice(cheapest))}/u)${stores.length>1?` · comprado en ${stores.length} tiendas distintas`:""}</div>
+      <div class="small muted" style="margin-top:6px;">Más barato en: <strong>${escapeHtml(cheapest.store)}</strong> (${fmt(unitPrice(cheapest))}/u)${stores.length>1?` · comprado en ${stores.length} tiendas distintas`:""}</div>
     </div>`;
   }).join("") || `<div class="empty-note">Sin resultados.</div>`;
 }
@@ -735,8 +773,8 @@ function renderRotacion(){
 
   document.getElementById("rotTableBody").innerHTML = rows.map(r=>`
     <tr>
-      <td><strong>${r.p.name}</strong></td>
-      <td class="small">${r.last && r.last.date ? r.last.date : "No registrada"}${r.last?" · "+r.last.store:""}</td>
+      <td><strong>${escapeHtml(r.p.name)}</strong></td>
+      <td class="small">${r.last && r.last.date ? escapeHtml(r.last.date) : "No registrada"}${r.last?" · "+escapeHtml(r.last.store):""}</td>
       <td class="mono">${r.ds===null?"—":r.ds+" d"}</td>
       <td class="mono">${r.p.rotationDays} d</td>
       <td>
@@ -746,7 +784,7 @@ function renderRotacion(){
         </div>
       </td>
     </tr>
-  `).join("");
+  `).join("") || `<tr><td colspan="5"><div class="empty-note">Sin productos registrados.</div></td></tr>`;
 }
 
 /* ---------- Render: Lista de Compras ---------- */
@@ -772,13 +810,14 @@ function renderCompras(){
 
   document.getElementById("shopList").innerHTML = list.length ? list.map(p=>{
     const low = p.stock <= p.threshold;
+    const safeName = escapeHtml(p.name);
     return `
     <div class="shop-item">
       <div>
-        <strong>${p.name}</strong>
-        <div class="why">${low ? `Stock: ${p.stock} ${p.unit} (mín. ${p.threshold})` : "Rotación atrasada"} · ${lastEntry(p).store}</div>
+        <strong>${safeName}</strong>
+        <div class="why">${low ? `Stock: ${p.stock} ${escapeHtml(p.unit)} (mín. ${p.threshold})` : "Rotación atrasada"} · ${escapeHtml(lastEntry(p).store)}</div>
       </div>
-      <button class="btn secondary" data-buy="${p.id}">Marcar comprado</button>
+      <button class="btn secondary" data-buy="${escapeHtml(p.id)}" aria-label="Marcar ${safeName} como comprado">Marcar comprado</button>
     </div>`;
   }).join("") : `<div class="empty-note">No hay nada urgente para comprar.</div>`;
 }
@@ -793,7 +832,7 @@ function populateForm(){
   catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
   const prodSel = document.getElementById("fProductSelect");
   prodSel.innerHTML = '<option value="">— Nuevo producto —</option>' +
-    DATA.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    DATA.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");
   document.getElementById("fDate").value = new Date().toISOString().slice(0,10);
 }
 
