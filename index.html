@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bodega — Sistema de Inventario</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --paper:#EEF0E2;
+  --panel:#F8F9F0;
+  --ink:#1E2A1F;
+  --ink-soft:#586459;
+  --line:#CDD1BC;
+  --primary:#1F3B30;
+  --primary-soft:#33564A;
+  --accent:#C6862B;
+  --accent-soft:#F0DDB4;
+  --good:#4C7A52;
+  --good-bg:#E1EBDE;
+  --warn:#B4791F;
+  --warn-bg:#F5E4C2;
+  --bad:#A13D2E;
+  --bad-bg:#F3DCD5;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+
+/* Header */
+header.top{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  gap:20px;flex-wrap:wrap;
+  border-bottom:3px solid var(--primary);
+  padding-bottom:18px;margin-bottom:22px;
+}
+.brand-eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;margin-bottom:6px;
+}
+h1{
+  font-family:'Oswald',sans-serif;font-weight:700;
+  font-size:clamp(28px,4vw,42px);letter-spacing:.01em;
+  margin:0;color:var(--primary);text-transform:uppercase;
+}
+.subtitle{color:var(--ink-soft);font-size:14px;margin-top:4px;max-width:520px;}
+.header-stat{
+  font-family:'IBM Plex Mono',monospace;text-align:right;
+}
+.header-stat .num{font-size:26px;font-weight:600;color:var(--primary);}
+.header-stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);}
+
+/* Tabs */
+.tabs{
+  display:flex;gap:4px;margin-bottom:22px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);
+}
+.tab-btn{
+  font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:.03em;
+  text-transform:uppercase;font-size:13.5px;
+  background:none;border:none;cursor:pointer;
+  color:var(--ink-soft);padding:10px 16px;
+  border-bottom:3px solid transparent;
+  transition:color .15s, border-color .15s;
+}
+.tab-btn:hover{color:var(--primary);}
+.tab-btn.active{color:var(--primary);border-color:var(--accent);}
+
+.view{display:none;animation:fade .2s ease;}
+.view.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:22px;}
+.kpi{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;position:relative;overflow:hidden;
+}
+.kpi::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--primary);
+}
+.kpi.warn::before{background:var(--warn);}
+.kpi.bad::before{background:var(--bad);}
+.kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:600;}
+.kpi .val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;margin-top:6px;color:var(--ink);}
+
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;margin-bottom:20px;
+}
+.panel h2{
+  font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:16px;
+  letter-spacing:.04em;color:var(--primary);margin:0 0 14px;
+  display:flex;align-items:center;gap:8px;
+}
+
+/* category bars */
+.cat-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px;}
+.cat-bar-row .cat-name{width:170px;flex-shrink:0;color:var(--ink-soft);}
+.cat-bar-track{flex:1;background:#E1E4D3;border-radius:6px;height:14px;overflow:hidden;}
+.cat-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-soft));}
+.cat-bar-val{font-family:'IBM Plex Mono',monospace;width:90px;text-align:right;flex-shrink:0;font-size:12.5px;}
+
+/* controls */
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+input[type="text"],input[type="search"],select,input[type="number"],input[type="date"]{
+  font-family:'Inter',sans-serif;font-size:13.5px;padding:8px 11px;
+  border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);
+}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{
+  text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);
+  padding:8px 10px;border-bottom:2px solid var(--line);font-weight:600;
+}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:hover td{background:#F1F2E6;}
+
+.tag{
+  display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.03em;
+  padding:3px 8px;border-radius:4px;position:relative;
+}
+.tag.good{background:var(--good-bg);color:var(--good);}
+.tag.warn{background:var(--warn-bg);color:var(--warn);}
+.tag.bad{background:var(--bad-bg);color:var(--bad);}
+.tag.neutral{background:#E4E6D8;color:var(--ink-soft);}
+
+.stock-ctrl{display:flex;align-items:center;gap:6px;}
+.stock-ctrl button{
+  width:24px;height:24px;border-radius:5px;border:1px solid var(--line);
+  background:#fff;cursor:pointer;font-weight:700;color:var(--primary);
+  font-family:'IBM Plex Mono',monospace;line-height:1;
+}
+.stock-ctrl button:hover{background:var(--accent-soft);}
+.stock-ctrl .qty{font-family:'IBM Plex Mono',monospace;min-width:34px;text-align:center;font-weight:600;}
+
+.pill-cat{
+  font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--primary-soft);
+  border:1px solid var(--line);padding:2px 7px;border-radius:20px;white-space:nowrap;
+}
+
+.mono{font-family:'IBM Plex Mono',monospace;}
+.muted{color:var(--ink-soft);}
+.small{font-size:12px;}
+
+/* rotation gauge */
+.gauge-wrap{display:flex;align-items:center;gap:8px;min-width:130px;}
+.gauge-track{flex:1;height:8px;border-radius:4px;background:#E1E4D3;overflow:hidden;}
+.gauge-fill{height:100%;}
+.gauge-fill.good{background:var(--good);}
+.gauge-fill.warn{background:var(--warn);}
+.gauge-fill.bad{background:var(--bad);}
+
+/* price history */
+.price-hist-list{list-style:none;margin:0;padding:0;font-size:12.5px;}
+.price-hist-list li{
+  display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line);
+}
+.price-hist-list li:last-child{border-bottom:none;}
+
+/* buy list */
+.shop-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff;
+}
+.shop-item .why{font-size:11.5px;color:var(--ink-soft);}
+.btn{
+  font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.03em;
+  font-size:12.5px;background:var(--primary);color:#fff;border:none;border-radius:7px;
+  padding:9px 16px;cursor:pointer;
+}
+.btn:hover{background:var(--primary-soft);}
+.btn.secondary{background:none;border:1px solid var(--primary);color:var(--primary);}
+.btn.secondary:hover{background:var(--primary);color:#fff;}
+.btn.accentbtn{background:var(--accent);}
+.btn.accentbtn:hover{background:#B07423;}
+
+/* form */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:5px;font-weight:600;}
+.field input,.field select{width:100%;}
+
+.empty-note{color:var(--ink-soft);font-size:13px;font-style:italic;padding:20px 0;text-align:center;}
+
+footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:center;}
+
+@media (max-width:640px){
+  .header-stat{text-align:left;}
+  th:nth-child(4),td:nth-child(4){display:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand-eyebrow">Control de Bodega Doméstica</div>
+      <h1>Inventario del Mercado</h1>
+      <div class="subtitle">Existencias, rotación y precios de las compras registradas en Metro, Éxito, Jumbo, droguería y tienda de barrio.</div>
+    </div>
+    <div class="header-stat">
+      <div class="num mono" id="hdrTotalValue">$0</div>
+      <div class="lbl">Valor estimado en bodega</div>
+      <div class="lbl" id="saveStatus" style="margin-top:4px;"></div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="resumen">Resumen</button>
+    <button class="tab-btn" data-tab="inventario">Inventario</button>
+    <button class="tab-btn" data-tab="precios">Precios</button>
+    <button class="tab-btn" data-tab="rotacion">Rotación</button>
+    <button class="tab-btn" data-tab="compras">Lista de Compras</button>
+    <button class="tab-btn" data-tab="registrar">Registrar Compra</button>
+  </nav>
+
+  <!-- RESUMEN -->
+  <div class="view active" id="view-resumen">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="panel">
+      <h2>Gasto registrado por categoría</h2>
+      <div id="catBars"></div>
+    </div>
+    <div class="panel">
+      <h2>Atención inmediata</h2>
+      <div id="attentionList"></div>
+    </div>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div class="view" id="view-inventario">
+    <div class="panel">
+      <div class="controls">
+        <input type="search" id="invSearch" placeholder="Buscar producto…" style="min-width:220px;">
+        <select id="invCatFilter"><option value="">Todas las categorías</option></select>
+        <select id="invStatusFilter">
+          <option value="">Todo el stock</option>
+          <option value="bajo">Solo stock bajo</option>
+        </select>
+        <span class="muted small" id="invCount"></span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Categoría</th><th>Última tienda</th><th>Precio unit.</th><th>Existencia</th><th>Estado</th></tr>
+        </thead>
+        <tbody id="invTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PRECIOS -->
+  <div class="view" id="view-precios">
+    <div class="panel">
+      <div class="controls">
+        <input type="search" id="priceSearch" placeholder="Buscar producto…" style="min-width:220px;">
+        <select id="priceSort">
+          <option value="name">Ordenar: nombre</option>
+          <option value="value">Ordenar: mayor precio</option>
+          <option value="change">Ordenar: mayor variación</option>
+        </select>
+      </div>
+      <div id="priceList"></div>
+    </div>
+  </div>
+
+  <!-- ROTACION -->
+  <div class="view" id="view-rotacion">
+    <div class="panel">
+      <h2>Ciclo de rotación por producto</h2>
+      <p class="muted small" style="margin-top:-8px;">
+        Compara los días desde la última compra registrada contra el ciclo esperado de consumo de cada producto.
+        Los productos sin fecha de compra no se pueden calcular todavía — regístrales una fecha en "Registrar Compra".
+      </p>
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Última compra</th><th>Días transcurridos</th><th>Ciclo esperado</th><th>Estado de rotación</th></tr>
+        </thead>
+        <tbody id="rotTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LISTA DE COMPRAS -->
+  <div class="view" id="view-compras">
+    <div class="panel">
+      <h2>Sugerido para la próxima compra</h2>
+      <p class="muted small" style="margin-top:-8px;">Generado automáticamente: stock por debajo del mínimo, o rotación atrasada.</p>
+      <div id="shopList"></div>
+    </div>
+  </div>
+
+  <!-- REGISTRAR COMPRA -->
+  <div class="view" id="view-registrar">
+    <div class="panel">
+      <h2>Registrar una nueva compra</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>Producto existente</label>
+          <select id="fProductSelect"><option value="">— Nuevo producto —</option></select>
+        </div>
+        <div class="field">
+          <label>Nombre del producto</label>
+          <input type="text" id="fName" placeholder="Ej. Arroz blanco">
+        </div>
+        <div class="field">
+          <label>Categoría</label>
+          <select id="fCategory"></select>
+        </div>
+        <div class="field">
+          <label>Unidad</label>
+          <input type="text" id="fUnit" placeholder="Ej. bolsa, unidad, kg">
+        </div>
+        <div class="field">
+          <label>Tienda</label>
+          <input type="text" id="fStore" placeholder="Ej. Éxito Fabricato">
+        </div>
+        <div class="field">
+          <label>Precio total pagado (COP)</label>
+          <input type="number" id="fPrice" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Cantidad comprada</label>
+          <input type="number" id="fQty" value="1" min="0.01" step="0.01">
+        </div>
+        <div class="field">
+          <label>Fecha de compra</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field">
+          <label>Ciclo de rotación esperado (días)</label>
+          <input type="number" id="fRotation" placeholder="Ej. 14">
+        </div>
+        <div class="field">
+          <label>Mínimo antes de reordenar</label>
+          <input type="number" id="fThreshold" value="1" min="0" step="0.01">
+        </div>
+      </div>
+      <button class="btn accentbtn" id="fSubmit">Guardar compra</button>
+      <span class="muted small" id="fMsg" style="margin-left:12px;"></span>
+    </div>
+  </div>
+
+  <footer class="note">
+    <div style="margin-bottom:10px;">
+      <button class="btn secondary" id="btnExport">Descargar respaldo (.json)</button>
+      <label class="btn secondary" style="cursor:pointer;display:inline-block;">
+        Restaurar respaldo
+        <input type="file" id="fileImport" accept="application/json" style="display:none;">
+      </label>
+      <span class="small muted" id="backupMsg" style="margin-left:8px;"></span>
+    </div>
+    Los datos se guardan automáticamente en el almacenamiento local de este navegador (localStorage). Solo son visibles desde este mismo navegador y dispositivo — si abres el archivo en otro navegador o computador, no verás estos datos. Si el indicador dice "Respaldo automático activo", tu navegador no permitió guardar (modo privado, por ejemplo); usa el botón de respaldo para no perder tus cambios.
+  </footer>
+</div>
+
+<script>
+const CATEGORIES = ["Alimentos","Lácteos y Refrigerados","Aseo","Cuidado Personal","Farmacia","Bebidas","Otros"];
+
+const SEED = [
+ {id:"cerveza-aguila-paq",name:"Cerveza Águila (paquete)",category:"Bebidas",unit:"paquete",stock:1,threshold:1,rotationDays:21,history:[{store:"Metro Prado",price:21150,qty:1,date:null}]},
+ {id:"cerveza-aguila-und",name:"Cerveza Águila (unidad)",category:"Bebidas",unit:"unidad",stock:3,threshold:2,rotationDays:14,history:[{store:"Comercializadora La 2000",price:4000,qty:3,date:null}]},
+ {id:"salsa-tomate-fruco",name:"Salsa de tomate Fruco",category:"Alimentos",unit:"frasco",stock:1,threshold:1,rotationDays:30,history:[{store:"Metro Prado",price:12190,qty:1,date:null}]},
+ {id:"galletas-tosh",name:"Galletas Tosh",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:14,history:[{store:"Metro Prado",price:10500,qty:1,date:null}]},
+ {id:"cereal-choco",name:"Cereal chocolatado",category:"Alimentos",unit:"caja",stock:1,threshold:1,rotationDays:21,history:[{store:"Metro Prado",price:19990,qty:1,date:null}]},
+ {id:"crema-dental",name:"Crema dental",category:"Cuidado Personal",unit:"unidad",stock:1,threshold:1,rotationDays:60,history:[{store:"Metro Prado",price:34050,qty:1,date:null}]},
+ {id:"arroz-blanco",name:"Arroz blanco",category:"Alimentos",unit:"bolsa",stock:1,threshold:1,rotationDays:30,history:[{store:"Metro Prado",price:7890,qty:1,date:null}]},
+ {id:"milo",name:"Milo (alimento)",category:"Alimentos",unit:"bolsa",stock:1,threshold:1,rotationDays:21,history:[{store:"Metro Prado",price:20580,qty:1,date:null}]},
+ {id:"papel-higienico",name:"Papel higiénico",category:"Aseo",unit:"paquete",stock:1,threshold:1,rotationDays:45,history:[{store:"Metro Prado",price:27590,qty:1,date:null}]},
+ {id:"lavaloza",name:"Lavaloza",category:"Aseo",unit:"unidad",stock:1,threshold:1,rotationDays:30,history:[{store:"Metro Prado",price:18890,qty:1,date:null}]},
+ {id:"detergente",name:"Detergente",category:"Aseo",unit:"unidad",stock:1,threshold:1,rotationDays:45,history:[{store:"Metro Prado",price:83600,qty:1,date:null}]},
+ {id:"salchicha-west",name:"Salchicha West 138g",category:"Lácteos y Refrigerados",unit:"paquete",stock:1,threshold:1,rotationDays:7,history:[{store:"Supermercado",price:3598,qty:1,date:null}]},
+ {id:"jamon-colanta",name:"Jamón seleccionado Colanta",category:"Lácteos y Refrigerados",unit:"paquete",stock:1,threshold:1,rotationDays:7,history:[{store:"Supermercado",price:12481,qty:1,date:null}]},
+ {id:"leche-colanta",name:"Leche pasteurizada Colanta",category:"Lácteos y Refrigerados",unit:"bolsa",stock:1,threshold:2,rotationDays:4,history:[{store:"Supermercado",price:3950,qty:1,date:null}]},
+ {id:"quesito-montefrio",name:"Quesito Montefrío",category:"Lácteos y Refrigerados",unit:"unidad",stock:2,threshold:1,rotationDays:7,history:[{store:"Supermercado",price:4850,qty:1,date:null},{store:"Mercolanta Cabañas",price:4850,qty:1,date:"2026-08-25"}]},
+ {id:"bolsa-reutilizable",name:"Bolsa plástica reutilizable",category:"Otros",unit:"unidad",stock:3,threshold:1,rotationDays:90,history:[{store:"Supermercado",price:611,qty:1,date:null},{store:"Mercolanta Cabañas",price:611,qty:1,date:"2026-08-22"},{store:"Supermercado Los Colores",price:250,qty:1,date:"2026-08-23"}]},
+ {id:"pastel-queso",name:"Pastel de queso Colanta",category:"Alimentos",unit:"unidad",stock:1,threshold:1,rotationDays:5,history:[{store:"Supermercado",price:3704,qty:1,date:null}]},
+ {id:"crema-corporal",name:"Crema corporal",category:"Cuidado Personal",unit:"unidad",stock:1,threshold:1,rotationDays:60,history:[{store:"Éxito Fabricato",price:34905,qty:1,date:"2026-08-15"}]},
+ {id:"cuchillas-afeitar",name:"Cuchillas de afeitar",category:"Cuidado Personal",unit:"paquete",stock:1,threshold:1,rotationDays:60,history:[{store:"Éxito Fabricato",price:21700,qty:1,date:"2026-08-15"}]},
+ {id:"suavizante-caps",name:"Suavizante Caps",category:"Aseo",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Éxito Fabricato",price:21020,qty:1,date:"2026-08-15"}]},
+ {id:"galletas-8tacos",name:"Galletas 8 Tacos",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:14,history:[{store:"Éxito Fabricato",price:14810,qty:1,date:"2026-08-15"}]},
+ {id:"tocineta-colanta",name:"Tocineta Colanta",category:"Lácteos y Refrigerados",unit:"paquete",stock:1,threshold:1,rotationDays:7,history:[{store:"Éxito Fabricato",price:15350,qty:1,date:"2026-08-15"}]},
+ {id:"desmaquillante",name:"Desmaquillante bioactivo",category:"Cuidado Personal",unit:"frasco",stock:1,threshold:1,rotationDays:45,history:[{store:"Éxito Fabricato",price:13800,qty:1,date:"2026-08-15"}]},
+ {id:"queso-americano",name:"Queso americano",category:"Lácteos y Refrigerados",unit:"paquete",stock:1,threshold:1,rotationDays:10,history:[{store:"Éxito Fabricato",price:9817,qty:1,date:"2026-08-15"}]},
+ {id:"alcohol",name:"Alcohol antiséptico",category:"Farmacia",unit:"frasco",stock:1,threshold:1,rotationDays:90,history:[{store:"Éxito Fabricato",price:10550,qty:1,date:"2026-08-15"}]},
+ {id:"vinagreta-mostaza",name:"Vinagreta de mostaza",category:"Alimentos",unit:"frasco",stock:1,threshold:1,rotationDays:30,history:[{store:"Éxito Fabricato",price:8550,qty:1,date:"2026-08-15"}]},
+ {id:"pan-blanco",name:"Pan blanco suave",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:5,history:[{store:"Éxito Fabricato",price:7700,qty:1,date:"2026-08-15"}]},
+ {id:"mostaza-doypack",name:"Mostaza doy pack",category:"Alimentos",unit:"unidad",stock:1,threshold:1,rotationDays:45,history:[{store:"Éxito Fabricato",price:5624,qty:1,date:"2026-08-15"}]},
+ {id:"mezcla-preparar",name:"Mezcla para preparar",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Éxito Fabricato",price:6700,qty:1,date:"2026-08-15"}]},
+ {id:"arepa-choclo",name:"Arepa de choclo",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:5,history:[{store:"Éxito Fabricato",price:5640,qty:1,date:"2026-08-15"}]},
+ {id:"afelius-oil-free",name:"Afelius Oil Free x60gr",category:"Farmacia",unit:"unidad",stock:1,threshold:1,rotationDays:90,history:[{store:"Droguería Específica",price:96000,qty:1,date:"2026-08-19"}]},
+ {id:"mezcla-santa",name:"Mezcla Santa",category:"Alimentos",unit:"bolsa",stock:1,threshold:1,rotationDays:21,history:[{store:"Jumbo Santafé",price:30190,qty:1,date:null}]},
+ {id:"mini-croissants",name:"Mini croissants (x4)",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:5,history:[{store:"Jumbo Santafé",price:10990,qty:4,date:null}]},
+ {id:"yogurt-cereal",name:"Yogurt con cereal",category:"Lácteos y Refrigerados",unit:"paquete",stock:1,threshold:1,rotationDays:5,history:[{store:"Jumbo Santafé",price:19680,qty:1,date:null}]},
+ {id:"huevos-santa",name:"Huevos Santa",category:"Lácteos y Refrigerados",unit:"cubeta",stock:1,threshold:1,rotationDays:14,history:[{store:"Jumbo Santafé",price:17590,qty:1,date:null}]},
+ {id:"cereal-trix",name:"Cereal Trix",category:"Alimentos",unit:"caja",stock:1,threshold:1,rotationDays:21,history:[{store:"Jumbo Santafé",price:22590,qty:1,date:null}]},
+ {id:"postobon",name:"Postobón",category:"Bebidas",unit:"unidad",stock:1,threshold:1,rotationDays:14,history:[{store:"Comercializadora La 2000",price:5300,qty:1,date:null}]},
+ {id:"crema-agria",name:"Crema agria",category:"Lácteos y Refrigerados",unit:"unidad",stock:1,threshold:1,rotationDays:14,history:[{store:"Comercializadora La 2000",price:7400,qty:1,date:null}]},
+ {id:"crema-leche",name:"Crema de leche",category:"Lácteos y Refrigerados",unit:"unidad",stock:1,threshold:1,rotationDays:14,history:[{store:"Comercializadora La 2000",price:9900,qty:1,date:null}]},
+ {id:"pimenton",name:"Pimentón",category:"Alimentos",unit:"kg",stock:0.1,threshold:0.05,rotationDays:10,history:[{store:"Comercializadora La 2000",price:312,qty:0.1,date:null}]},
+ {id:"trident",name:"Trident (chicle)",category:"Otros",unit:"unidad",stock:1,threshold:1,rotationDays:30,history:[{store:"Comercializadora La 2000",price:1700,qty:1,date:null}]},
+ {id:"tocineta-cabana",name:"Tocineta Cabaña",category:"Lácteos y Refrigerados",unit:"paquete",stock:1,threshold:1,rotationDays:7,history:[{store:"Comercializadora La 2000",price:18200,qty:1,date:null}]},
+ {id:"pan-bimbo",name:"Pan Bimbo Super",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:5,history:[{store:"Comercializadora La 2000",price:6600,qty:1,date:null}]},
+ {id:"solomito-cerdo",name:"Solomito de cerdo al vacío",category:"Carnes y Embutidos",unit:"kg",stock:0.745,threshold:0.3,rotationDays:5,history:[{store:"Mercolanta Cabañas",price:16129,qty:0.745,date:"2026-08-22"}]},
+ {id:"solomo-redondo-res",name:"Solomo redondo de res al vacío",category:"Carnes y Embutidos",unit:"kg",stock:1.075,threshold:0.3,rotationDays:5,history:[{store:"Mercolanta Cabañas",price:62931,qty:1.075,date:"2026-08-22"}]},
+ {id:"pechuga-pollo-campesina",name:"Pechuga de pollo campesina refrigerada",category:"Carnes y Embutidos",unit:"kg",stock:0.865,threshold:0.3,rotationDays:5,history:[{store:"Mercolanta Cabañas",price:18980,qty:0.865,date:"2026-08-22"}]},
+ {id:"leche-entera-colanta-bolsa",name:"Leche pasteurizada entera Colanta (bolsa grande)",category:"Lácteos y Refrigerados",unit:"bolsa",stock:2,threshold:1,rotationDays:4,history:[{store:"Mercolanta Cabañas",price:11600,qty:1,date:"2026-08-22"},{store:"Mercolanta Cabañas",price:11600,qty:1,date:"2026-08-25"}]},
+ {id:"leche-deslactosada-colanta",name:"Leche deslactosada Colanta",category:"Lácteos y Refrigerados",unit:"bolsa",stock:1,threshold:1,rotationDays:4,history:[{store:"Mercolanta Cabañas",price:11600,qty:1,date:"2026-08-22"}]},
+ {id:"gatorade",name:"Bebida hidratante Gatorade",category:"Bebidas",unit:"unidad",stock:1,threshold:1,rotationDays:14,history:[{store:"Supermercado Los Colores",price:4850,qty:1,date:"2026-08-23"}]},
+ {id:"kola-granulada",name:"Kola granulada",category:"Alimentos",unit:"unidad",stock:1,threshold:1,rotationDays:60,history:[{store:"Supermercado Los Colores",price:25000,qty:1,date:"2026-08-23"}]},
+ {id:"ponque-chocoramo",name:"Ponqué Chocoramo",category:"Alimentos",unit:"unidad",stock:1,threshold:1,rotationDays:10,history:[{store:"Supermercado Los Colores",price:17600,qty:1,date:"2026-08-23"}]},
+ {id:"chocolatina-jet",name:"Chocolatina Jet x6",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Supermercado Los Colores",price:19520,qty:1,date:"2026-08-23"}]},
+ {id:"trululu-aros",name:"Trululu Aros 24B x70gr",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:21,history:[{store:"Mercolanta Cabañas",price:2017,qty:1,date:"2026-08-25"}]},
+ {id:"sal-fortin-soya",name:"Sal Fortín (soya)",category:"Alimentos",unit:"paquete",stock:1,threshold:1,rotationDays:60,history:[{store:"Comercializadora La 2000",price:4450,qty:1,date:"2026-08-26"}]},
+ {id:"nosotras-invisible",name:"Toallas Nosotras Invisible",category:"Cuidado Personal",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Comercializadora La 2000",price:11950,qty:1,date:"2026-08-26"}]},
+ {id:"tomate-alino",name:"Tomate aliño",category:"Alimentos",unit:"kg",stock:0.9,threshold:0.3,rotationDays:7,history:[{store:"Comercializadora La 2000",price:4950,qty:0.9,date:"2026-08-26"}]},
+ {id:"easy-off-bang",name:"Easy-Off Bang (limpiador de horno)",category:"Aseo",unit:"unidad",stock:1,threshold:1,rotationDays:90,history:[{store:"Comercializadora La 2000",price:12500,qty:1,date:"2026-08-26"}]},
+ {id:"proteccion-nosotras",name:"Protección diaria Nosotras",category:"Cuidado Personal",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Comercializadora La 2000",price:11800,qty:1,date:"2026-08-26"}]}
+];
+
+const STORAGE_KEY = "bodega-inventario-v1";
+let DATA = [];
+let persistenceBroken = false; // true si el backend remoto está fallando en esta sesión
+let lastAutoBackupTime = 0;
+const AUTO_BACKUP_COOLDOWN_MS = 15000;
+
+function fmt(n){ return "$"+Math.round(n).toLocaleString("es-CO"); }
+
+function unitPrice(entry){ return entry.qty>0 ? entry.price/entry.qty : entry.price; }
+
+function lastEntry(p){
+  const dated = p.history.filter(h=>h.date).sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(dated.length) return dated[0];
+  return p.history[p.history.length-1];
+}
+
+function lastUnitPrice(p){ const e=lastEntry(p); return e ? unitPrice(e) : 0; }
+
+function daysSince(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+"T00:00:00");
+  const now = new Date();
+  return Math.floor((now - d) / 86400000);
+}
+
+function setSaveStatus(state){
+  const el = document.getElementById("saveStatus");
+  if(!el) return;
+  if(state==="saving"){ el.textContent = "Guardando…"; el.style.color = "var(--ink-soft)"; }
+  else if(state==="saved"){ el.textContent = "Guardado"; el.style.color = "var(--good)"; }
+  else if(state==="error"){ el.textContent = "Respaldo automático activo (no se pudo guardar en este navegador)"; el.style.color = "var(--warn)"; }
+  else { el.textContent = ""; }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+function downloadBackup(silent){
+  try{
+    const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+    a.href = url;
+    a.download = `bodega-respaldo-auto-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    lastAutoBackupTime = Date.now();
+    const msg = document.getElementById("backupMsg");
+    if(msg){
+      msg.textContent = silent ? "Respaldo automático descargado (la nube no responde)." : "Respaldo descargado.";
+      msg.style.color = "var(--warn)";
+    }
+  }catch(e){ console.error("No se pudo generar el respaldo automático", e); }
+}
+
+function maybeAutoBackup(){
+  if(Date.now() - lastAutoBackupTime > AUTO_BACKUP_COOLDOWN_MS){
+    downloadBackup(true);
+  }
+}
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length){
+        DATA = parsed;
+        setSaveStatus("saved");
+        return;
+      }
+    }
+  }catch(e){ /* localStorage no disponible (modo privado, cuota, etc.) o dato corrupto: partimos de la semilla */ }
+  DATA = JSON.parse(JSON.stringify(SEED));
+  await saveData();
+}
+
+async function saveData(){
+  setSaveStatus("saving");
+  const payload = JSON.stringify(DATA);
+  const attempts = 3;
+  for(let i=0;i<attempts;i++){
+    try{
+      localStorage.setItem(STORAGE_KEY, payload);
+      setSaveStatus("saved");
+      persistenceBroken = false;
+      return;
+    }catch(e){
+      console.error("No se pudo guardar en este navegador (intento "+(i+1)+")", e);
+    }
+    if(i < attempts-1) await sleep(400);
+  }
+  // Este navegador no permite guardar (modo privado, cuota llena, etc.): no bloqueamos al usuario, respaldamos con un archivo.
+  persistenceBroken = true;
+  setSaveStatus("error");
+  maybeAutoBackup();
+}
+
+// Reintento silencioso en segundo plano: si el guardado local vuelve a funcionar, retomamos sin pedirle nada al usuario.
+setInterval(async ()=>{
+  if(!persistenceBroken || !DATA.length) return;
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+    persistenceBroken = false;
+    setSaveStatus("saved");
+  }catch(e){ /* seguimos en modo respaldo automático */ }
+}, 20000);
+
+// Último salvavidas: si el usuario cierra o recarga la pestaña con cambios sin guardar en la nube, forzamos un respaldo.
+window.addEventListener("beforeunload", ()=>{
+  if(persistenceBroken) downloadBackup(true);
+});
+
+/* ---------- Tabs ---------- */
+document.getElementById("tabs").addEventListener("click", e=>{
+  if(e.target.matches(".tab-btn")){
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    e.target.classList.add("active");
+    document.getElementById("view-"+e.target.dataset.tab).classList.add("active");
+  }
+});
+
+/* ---------- Render: Resumen ---------- */
+function renderResumen(){
+  let totalValue=0, lowStock=0, atrasados=0, totalSpend=0;
+  const catSpend = {};
+  DATA.forEach(p=>{
+    const uPrice = lastUnitPrice(p);
+    totalValue += uPrice * p.stock;
+    if(p.stock <= p.threshold) lowStock++;
+    const last = lastEntry(p);
+    const ds = last ? daysSince(last.date) : null;
+    if(ds!==null && ds >= p.rotationDays) atrasados++;
+    p.history.forEach(h=>{ totalSpend += h.price; catSpend[p.category] = (catSpend[p.category]||0) + h.price; });
+  });
+
+  document.getElementById("hdrTotalValue").textContent = fmt(totalValue);
+
+  const kpiGrid = document.getElementById("kpiGrid");
+  kpiGrid.innerHTML = `
+    <div class="kpi"><div class="lbl">Valor en bodega</div><div class="val">${fmt(totalValue)}</div></div>
+    <div class="kpi"><div class="lbl">Gasto histórico registrado</div><div class="val">${fmt(totalSpend)}</div></div>
+    <div class="kpi ${lowStock?'bad':''}"><div class="lbl">Productos con stock bajo</div><div class="val">${lowStock}</div></div>
+    <div class="kpi ${atrasados?'warn':''}"><div class="lbl">Rotación atrasada</div><div class="val">${atrasados}</div></div>
+    <div class="kpi"><div class="lbl">Productos distintos</div><div class="val">${DATA.length}</div></div>
+  `;
+
+  const maxCat = Math.max(...Object.values(catSpend), 1);
+  const catBars = document.getElementById("catBars");
+  catBars.innerHTML = Object.entries(catSpend).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+    <div class="cat-bar-row">
+      <div class="cat-name">${cat}</div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${(val/maxCat*100).toFixed(1)}%"></div></div>
+      <div class="cat-bar-val mono">${fmt(val)}</div>
+    </div>
+  `).join("");
+
+  const attn = [];
+  DATA.forEach(p=>{
+    if(p.stock <= p.threshold) attn.push({p, reason:"Stock bajo mínimo ("+p.stock+" "+p.unit+")", type:"bad"});
+    const last = lastEntry(p);
+    const ds = last ? daysSince(last.date) : null;
+    if(ds!==null && ds >= p.rotationDays) attn.push({p, reason:`Sin recompra hace ${ds} días (ciclo: ${p.rotationDays})`, type:"warn"});
+  });
+  const attnList = document.getElementById("attentionList");
+  attnList.innerHTML = attn.length ? attn.slice(0,10).map(a=>`
+    <div class="shop-item">
+      <div><strong>${a.p.name}</strong><div class="why">${a.reason}</div></div>
+      <span class="tag ${a.type}">${a.type==='bad'?'Reordenar':'Revisar rotación'}</span>
+    </div>
+  `).join("") : `<div class="empty-note">Todo está bajo control por ahora.</div>`;
+}
+
+/* ---------- Render: Inventario ---------- */
+function populateCatFilter(){
+  const sel = document.getElementById("invCatFilter");
+  sel.innerHTML = '<option value="">Todas las categorías</option>' +
+    CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+
+function renderInventario(){
+  const q = document.getElementById("invSearch").value.toLowerCase();
+  const catF = document.getElementById("invCatFilter").value;
+  const statusF = document.getElementById("invStatusFilter").value;
+
+  let rows = DATA.filter(p=>{
+    if(q && !p.name.toLowerCase().includes(q)) return false;
+    if(catF && p.category !== catF) return false;
+    if(statusF==="bajo" && p.stock > p.threshold) return false;
+    return true;
+  }).sort((a,b)=>a.name.localeCompare(b.name));
+
+  document.getElementById("invCount").textContent = rows.length + " producto(s)";
+
+  document.getElementById("invTableBody").innerHTML = rows.map(p=>{
+    const last = lastEntry(p);
+    const uPrice = lastUnitPrice(p);
+    const low = p.stock <= p.threshold;
+    return `
+    <tr>
+      <td><strong>${p.name}</strong><div class="small muted">${p.unit}</div></td>
+      <td><span class="pill-cat">${p.category}</span></td>
+      <td class="small">${last ? last.store : "—"}</td>
+      <td class="mono">${fmt(uPrice)}</td>
+      <td>
+        <div class="stock-ctrl">
+          <button data-act="dec" data-id="${p.id}">−</button>
+          <span class="qty">${p.stock}</span>
+          <button data-act="inc" data-id="${p.id}">+</button>
+        </div>
+      </td>
+      <td>${low ? `<span class="tag bad">Bajo · mín ${p.threshold}</span>` : `<span class="tag good">Suficiente</span>`}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="6"><div class="empty-note">Sin resultados.</div></td></tr>`;
+}
+
+document.getElementById("invTableBody").addEventListener("click", async e=>{
+  const btn = e.target.closest("button[data-act]");
+  if(!btn) return;
+  const p = DATA.find(x=>x.id===btn.dataset.id);
+  if(!p) return;
+  const step = p.unit==="kg" ? 0.05 : 1;
+  if(btn.dataset.act==="inc") p.stock = +(p.stock+step).toFixed(2);
+  if(btn.dataset.act==="dec") p.stock = Math.max(0, +(p.stock-step).toFixed(2));
+  await saveData();
+  renderAll();
+});
+
+["invSearch","invCatFilter","invStatusFilter"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", renderInventario);
+});
+
+/* ---------- Render: Precios ---------- */
+function priceChange(p){
+  const dated = p.history.filter(h=>h.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const pool = dated.length>=2 ? dated : p.history;
+  if(pool.length<2) return null;
+  const prev = unitPrice(pool[pool.length-2]);
+  const curr = unitPrice(pool[pool.length-1]);
+  return { pct: ((curr-prev)/prev)*100, prev, curr };
+}
+
+function renderPrecios(){
+  const q = document.getElementById("priceSearch").value.toLowerCase();
+  const sort = document.getElementById("priceSort").value;
+  let rows = DATA.filter(p=>!q || p.name.toLowerCase().includes(q));
+
+  rows = rows.map(p=>({p, change: priceChange(p), uPrice: lastUnitPrice(p)}));
+
+  if(sort==="value") rows.sort((a,b)=>b.uPrice-a.uPrice);
+  else if(sort==="change") rows.sort((a,b)=>Math.abs(b.change?b.change.pct:0)-Math.abs(a.change?a.change.pct:0));
+  else rows.sort((a,b)=>a.p.name.localeCompare(b.p.name));
+
+  document.getElementById("priceList").innerHTML = rows.map(({p,change,uPrice})=>{
+    const stores = [...new Set(p.history.map(h=>h.store))];
+    const cheapest = p.history.reduce((min,h)=> unitPrice(h)<unitPrice(min)?h:min, p.history[0]);
+    let changeTag = `<span class="tag neutral">Sin histórico suficiente</span>`;
+    if(change){
+      const up = change.pct>0.5, down = change.pct<-0.5;
+      changeTag = `<span class="tag ${up?'bad':down?'good':'neutral'}">${up?'▲':down?'▼':'—'} ${Math.abs(change.pct).toFixed(1)}% vs compra anterior</span>`;
+    }
+    return `
+    <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
+        <div>
+          <strong>${p.name}</strong>
+          <span class="pill-cat" style="margin-left:6px;">${p.category}</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="mono" style="font-size:15px;">${fmt(uPrice)} / ${p.unit}</span>
+          ${changeTag}
+        </div>
+      </div>
+      <ul class="price-hist-list" style="margin-top:10px;">
+        ${p.history.map(h=>`<li><span>${h.store}${h.date?" · "+h.date:" · sin fecha"}</span><span class="mono">${fmt(h.price)} (${h.qty} ${p.unit} · ${fmt(unitPrice(h))}/u)</span></li>`).join("")}
+      </ul>
+      <div class="small muted" style="margin-top:6px;">Más barato en: <strong>${cheapest.store}</strong> (${fmt(unitPrice(cheapest))}/u)${stores.length>1?` · comprado en ${stores.length} tiendas distintas`:""}</div>
+    </div>`;
+  }).join("") || `<div class="empty-note">Sin resultados.</div>`;
+}
+document.getElementById("priceSearch").addEventListener("input", renderPrecios);
+document.getElementById("priceSort").addEventListener("change", renderPrecios);
+
+/* ---------- Render: Rotación ---------- */
+function renderRotacion(){
+  const rows = DATA.map(p=>{
+    const last = lastEntry(p);
+    const ds = last ? daysSince(last.date) : null;
+    let status, cls, pct;
+    if(ds===null){ status="Sin dato de fecha"; cls="neutral"; pct=0; }
+    else{
+      pct = Math.min(100, (ds/p.rotationDays)*100);
+      if(ds >= p.rotationDays){ status="Atrasado"; cls="bad"; }
+      else if(ds >= p.rotationDays*0.7){ status="Por vencer ciclo"; cls="warn"; }
+      else{ status="Al día"; cls="good"; }
+    }
+    return {p, last, ds, status, cls, pct};
+  }).sort((a,b)=> (b.ds===null?-1:b.ds) - (a.ds===null?-1:a.ds));
+
+  document.getElementById("rotTableBody").innerHTML = rows.map(r=>`
+    <tr>
+      <td><strong>${r.p.name}</strong></td>
+      <td class="small">${r.last && r.last.date ? r.last.date : "No registrada"}${r.last?" · "+r.last.store:""}</td>
+      <td class="mono">${r.ds===null?"—":r.ds+" d"}</td>
+      <td class="mono">${r.p.rotationDays} d</td>
+      <td>
+        <div class="gauge-wrap">
+          <div class="gauge-track"><div class="gauge-fill ${r.cls}" style="width:${r.pct}%"></div></div>
+          <span class="tag ${r.cls}">${r.status}</span>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+/* ---------- Render: Lista de Compras ---------- */
+async function markPurchased(id){
+  const p = DATA.find(x=>x.id===id);
+  if(!p) return;
+  p.stock = +(p.stock + p.threshold).toFixed(2);
+  const today = new Date().toISOString().slice(0,10);
+  const last = lastEntry(p);
+  p.history.push({store: last?last.store:"—", price: last?last.price:0, qty: last?last.qty:1, date: today});
+  await saveData();
+  renderAll();
+}
+
+function renderCompras(){
+  const list = DATA.filter(p=>{
+    const low = p.stock <= p.threshold;
+    const last = lastEntry(p);
+    const ds = last ? daysSince(last.date) : null;
+    const late = ds!==null && ds >= p.rotationDays;
+    return low || late;
+  });
+
+  document.getElementById("shopList").innerHTML = list.length ? list.map(p=>{
+    const low = p.stock <= p.threshold;
+    return `
+    <div class="shop-item">
+      <div>
+        <strong>${p.name}</strong>
+        <div class="why">${low ? `Stock: ${p.stock} ${p.unit} (mín. ${p.threshold})` : "Rotación atrasada"} · ${lastEntry(p).store}</div>
+      </div>
+      <button class="btn secondary" data-buy="${p.id}">Marcar comprado</button>
+    </div>`;
+  }).join("") : `<div class="empty-note">No hay nada urgente para comprar.</div>`;
+}
+document.getElementById("shopList").addEventListener("click", e=>{
+  const btn = e.target.closest("button[data-buy]");
+  if(btn) markPurchased(btn.dataset.buy);
+});
+
+/* ---------- Registrar Compra ---------- */
+function populateForm(){
+  const catSel = document.getElementById("fCategory");
+  catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
+  const prodSel = document.getElementById("fProductSelect");
+  prodSel.innerHTML = '<option value="">— Nuevo producto —</option>' +
+    DATA.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+  document.getElementById("fDate").value = new Date().toISOString().slice(0,10);
+}
+
+document.getElementById("fProductSelect").addEventListener("change", e=>{
+  const p = DATA.find(x=>x.id===e.target.value);
+  if(p){
+    document.getElementById("fName").value = p.name;
+    document.getElementById("fName").disabled = true;
+    document.getElementById("fCategory").value = p.category;
+    document.getElementById("fUnit").value = p.unit;
+    document.getElementById("fRotation").value = p.rotationDays;
+    document.getElementById("fThreshold").value = p.threshold;
+  } else {
+    document.getElementById("fName").disabled = false;
+    document.getElementById("fName").value = "";
+  }
+});
+
+document.getElementById("fSubmit").addEventListener("click", async ()=>{
+  const msg = document.getElementById("fMsg");
+  const selId = document.getElementById("fProductSelect").value;
+  const name = document.getElementById("fName").value.trim();
+  const store = document.getElementById("fStore").value.trim();
+  const price = parseFloat(document.getElementById("fPrice").value);
+  const qty = parseFloat(document.getElementById("fQty").value) || 1;
+  const date = document.getElementById("fDate").value || null;
+
+  if(!name || !store || isNaN(price)){
+    msg.textContent = "Completa nombre, tienda y precio.";
+    msg.style.color = "var(--bad)";
+    return;
+  }
+
+  const entry = {store, price, qty, date};
+
+  if(selId){
+    const p = DATA.find(x=>x.id===selId);
+    p.history.push(entry);
+    p.stock = +(p.stock + qty).toFixed(2);
+  } else {
+    const id = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") + "-" + Date.now().toString(36);
+    DATA.push({
+      id, name,
+      category: document.getElementById("fCategory").value,
+      unit: document.getElementById("fUnit").value || "unidad",
+      stock: qty,
+      threshold: parseFloat(document.getElementById("fThreshold").value) || 1,
+      rotationDays: parseInt(document.getElementById("fRotation").value) || 14,
+      history: [entry]
+    });
+  }
+
+  await saveData();
+  msg.textContent = "Compra registrada.";
+  msg.style.color = "var(--good)";
+  document.getElementById("fPrice").value = "";
+  document.getElementById("fStore").value = "";
+  document.getElementById("fProductSelect").value = "";
+  document.getElementById("fName").disabled = false;
+  document.getElementById("fName").value = "";
+  populateForm();
+  renderAll();
+});
+
+/* ---------- Init ---------- */
+function renderAll(){
+  renderResumen();
+  renderInventario();
+  renderPrecios();
+  renderRotacion();
+  renderCompras();
+  populateForm();
+}
+
+(async function init(){
+  populateCatFilter();
+  await loadData();
+  renderAll();
+
+  document.getElementById("btnExport").addEventListener("click", ()=>{
+    downloadBackup(false);
+  });
+
+  document.getElementById("fileImport").addEventListener("change", (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev)=>{
+      try{
+        const parsed = JSON.parse(ev.target.result);
+        if(!Array.isArray(parsed)) throw new Error("Formato inválido");
+        DATA = parsed;
+        await saveData();
+        renderAll();
+        document.getElementById("backupMsg").textContent = "Respaldo restaurado.";
+        document.getElementById("backupMsg").style.color = "var(--good)";
+      }catch(err){
+        document.getElementById("backupMsg").textContent = "El archivo no es un respaldo válido.";
+        document.getElementById("backupMsg").style.color = "var(--bad)";
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+})();
+</script>
+</body>
+</html>
