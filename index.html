@@ -388,17 +388,17 @@ footer.note{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:ce
     <div style="margin-bottom:10px;">
       <button class="btn secondary" id="btnExport">Descargar respaldo (.json)</button>
       <label class="btn secondary" style="cursor:pointer;display:inline-block;">
-        Restaurar respaldo
+        Fusionar respaldo
         <input type="file" id="fileImport" accept="application/json" style="display:none;">
       </label>
       <span class="small muted" id="backupMsg" role="alert" aria-live="assertive" style="margin-left:8px;"></span>
     </div>
-    Los datos se guardan automáticamente en el almacenamiento local de este navegador (localStorage). Solo son visibles desde este mismo navegador y dispositivo — si abres el archivo en otro navegador o computador, no verás estos datos. Si el indicador dice "Respaldo automático activo", tu navegador no permitió guardar (modo privado, por ejemplo); usa el botón de respaldo para no perder tus cambios.
+    Los datos se guardan automáticamente en el almacenamiento local de este navegador (localStorage). Solo son visibles desde este mismo navegador y dispositivo — cada dominio/puerto (esta web, un servidor local, un archivo abierto directo) tiene su propio almacenamiento aislado por diseño del navegador. Usa "Descargar respaldo" en el origen con datos nuevos y "Fusionar respaldo" en el otro para combinarlos sin perder nada — el botón añade productos y compras nuevas, nunca sobrescribe ni borra lo que ya tenías. Si el indicador dice "Respaldo automático activo", tu navegador no permitió guardar (modo privado, por ejemplo); usa el botón de respaldo para no perder tus cambios.
   </footer>
 </div>
 
 <script>
-const CATEGORIES = ["Alimentos","Lácteos y Refrigerados","Aseo","Cuidado Personal","Farmacia","Bebidas","Otros"];
+const CATEGORIES = ["Alimentos","Lácteos y Refrigerados","Aseo","Cuidado Personal","Farmacia","Bebidas","Carnes y Embutidos","Otros"];
 
 const SEED = [
  {id:"cerveza-aguila-paq",name:"Cerveza Águila (paquete)",category:"Bebidas",unit:"paquete",stock:1,threshold:1,rotationDays:21,history:[{store:"Metro Prado",price:21150,qty:1,date:null}]},
@@ -463,7 +463,7 @@ const SEED = [
 
 const STORAGE_KEY = "bodega-inventario-v1";
 let DATA = [];
-let persistenceBroken = false; // true si el backend remoto está fallando en esta sesión
+let persistenceBroken = false;
 let lastAutoBackupTime = 0;
 const AUTO_BACKUP_COOLDOWN_MS = 15000;
 
@@ -518,7 +518,7 @@ function downloadBackup(silent){
     lastAutoBackupTime = Date.now();
     const msg = document.getElementById("backupMsg");
     if(msg){
-      msg.textContent = silent ? "Respaldo automático descargado (la nube no responde)." : "Respaldo descargado.";
+      msg.textContent = silent ? "Respaldo automático descargado (no se pudo guardar localmente)." : "Respaldo descargado.";
       msg.style.color = "var(--warn)";
     }
   }catch(e){ console.error("No se pudo generar el respaldo automático", e); }
@@ -541,7 +541,7 @@ async function loadData(){
         return;
       }
     }
-  }catch(e){ /* localStorage no disponible (modo privado, cuota, etc.) o dato corrupto: partimos de la semilla */ }
+  }catch(e){ /* localStorage no disponible o dato corrupto: partimos de la semilla */ }
   DATA = JSON.parse(JSON.stringify(SEED));
   await saveData();
 }
@@ -561,13 +561,11 @@ async function saveData(){
     }
     if(i < attempts-1) await sleep(400);
   }
-  // Este navegador no permite guardar (modo privado, cuota llena, etc.): no bloqueamos al usuario, respaldamos con un archivo.
   persistenceBroken = true;
   setSaveStatus("error");
   maybeAutoBackup();
 }
 
-// Reintento silencioso en segundo plano: si el guardado local vuelve a funcionar, retomamos sin pedirle nada al usuario.
 setInterval(async ()=>{
   if(!persistenceBroken || !DATA.length) return;
   try{
@@ -577,10 +575,57 @@ setInterval(async ()=>{
   }catch(e){ /* seguimos en modo respaldo automático */ }
 }, 20000);
 
-// Último salvavidas: si el usuario cierra o recarga la pestaña con cambios sin guardar en la nube, forzamos un respaldo.
 window.addEventListener("beforeunload", ()=>{
   if(persistenceBroken) downloadBackup(true);
 });
+
+/* =========================================================
+   FUSIÓN DE RESPALDOS (Opción B)
+   Un respaldo importado se combina con los datos actuales:
+   nunca sobrescribe ni borra — solo añade productos nuevos
+   y compras nuevas que no existían todavía.
+   ========================================================= */
+function historySignature(h){
+  return [h.store, h.date, h.price, h.qty].join("|");
+}
+
+function mergeImportedData(current, imported){
+  const byId = new Map(current.map(p=>[p.id, p]));
+  let newProducts = 0, newEntries = 0, stockRaised = 0;
+
+  imported.forEach(ip=>{
+    if(!ip || !ip.id) return;
+    const cp = byId.get(ip.id);
+
+    if(!cp){
+      byId.set(ip.id, JSON.parse(JSON.stringify(ip)));
+      newProducts++;
+      return;
+    }
+
+    const seen = new Set(cp.history.map(historySignature));
+    (ip.history || []).forEach(h=>{
+      const sig = historySignature(h);
+      if(!seen.has(sig)){
+        cp.history.push(h);
+        seen.add(sig);
+        newEntries++;
+      }
+    });
+
+    if(typeof ip.stock === "number" && ip.stock > cp.stock){
+      cp.stock = ip.stock;
+      stockRaised++;
+    }
+
+    if(cp.threshold == null && ip.threshold != null) cp.threshold = ip.threshold;
+    if(cp.rotationDays == null && ip.rotationDays != null) cp.rotationDays = ip.rotationDays;
+    if(!cp.category && ip.category) cp.category = ip.category;
+    if(!cp.unit && ip.unit) cp.unit = ip.unit;
+  });
+
+  return { merged: Array.from(byId.values()), stats: { newProducts, newEntries, stockRaised } };
+}
 
 /* ---------- Tabs ---------- */
 document.getElementById("tabs").addEventListener("click", e=>{
@@ -924,10 +969,17 @@ function renderAll(){
       try{
         const parsed = JSON.parse(ev.target.result);
         if(!Array.isArray(parsed)) throw new Error("Formato inválido");
-        DATA = parsed;
+        const { merged, stats } = mergeImportedData(DATA, parsed);
+        DATA = merged;
         await saveData();
         renderAll();
-        document.getElementById("backupMsg").textContent = "Respaldo restaurado.";
+        const parts = [];
+        if(stats.newProducts) parts.push(`${stats.newProducts} producto(s) nuevo(s)`);
+        if(stats.newEntries) parts.push(`${stats.newEntries} compra(s) añadida(s) al historial`);
+        if(stats.stockRaised) parts.push(`stock actualizado en ${stats.stockRaised} producto(s)`);
+        document.getElementById("backupMsg").textContent = parts.length
+          ? "Fusionado: " + parts.join(", ") + "."
+          : "Fusionado: no había nada nuevo en ese respaldo.";
         document.getElementById("backupMsg").style.color = "var(--good)";
       }catch(err){
         document.getElementById("backupMsg").textContent = "El archivo no es un respaldo válido.";
