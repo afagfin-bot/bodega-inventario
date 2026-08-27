@@ -458,7 +458,11 @@ const SEED = [
  {id:"nosotras-invisible",name:"Toallas Nosotras Invisible",category:"Cuidado Personal",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Comercializadora La 2000",price:11950,qty:1,date:"2026-08-26"}]},
  {id:"tomate-alino",name:"Tomate aliño",category:"Alimentos",unit:"kg",stock:0.9,threshold:0.3,rotationDays:7,history:[{store:"Comercializadora La 2000",price:4950,qty:0.9,date:"2026-08-26"}]},
  {id:"easy-off-bang",name:"Easy-Off Bang (limpiador de horno)",category:"Aseo",unit:"unidad",stock:1,threshold:1,rotationDays:90,history:[{store:"Comercializadora La 2000",price:12500,qty:1,date:"2026-08-26"}]},
- {id:"proteccion-nosotras",name:"Protección diaria Nosotras",category:"Cuidado Personal",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Comercializadora La 2000",price:11800,qty:1,date:"2026-08-26"}]}
+ {id:"proteccion-nosotras",name:"Protección diaria Nosotras",category:"Cuidado Personal",unit:"paquete",stock:1,threshold:1,rotationDays:30,history:[{store:"Comercializadora La 2000",price:11800,qty:1,date:"2026-08-26"}]},
+ {id:"sal",name:"Sal",category:"Alimentos",unit:"paquete",stock:0,threshold:1,rotationDays:60,history:[]},
+ {id:"manzanas",name:"Manzanas",category:"Alimentos",unit:"kg",stock:0,threshold:0.3,rotationDays:10,history:[]},
+ {id:"banano",name:"Banano",category:"Alimentos",unit:"kg",stock:0,threshold:0.3,rotationDays:7,history:[]},
+ {id:"ducales",name:"Galletas Ducales",category:"Alimentos",unit:"paquete",stock:0,threshold:1,rotationDays:21,history:[]}
 ];
 
 const STORAGE_KEY = "bodega-inventario-v1";
@@ -771,6 +775,19 @@ function renderPrecios(){
   else rows.sort((a,b)=>a.p.name.localeCompare(b.p.name));
 
   document.getElementById("priceList").innerHTML = rows.map(({p,change,uPrice})=>{
+    if(!p.history.length){
+      return `
+      <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
+          <div>
+            <strong>${escapeHtml(p.name)}</strong>
+            <span class="pill-cat" style="margin-left:6px;">${escapeHtml(p.category)}</span>
+          </div>
+          <span class="tag neutral">Cotizar</span>
+        </div>
+        <div class="small muted" style="margin-top:6px;">Sin compras registradas todavía — agrégala en "Registrar Compra".</div>
+      </div>`;
+    }
     const stores = [...new Set(p.history.map(h=>h.store))];
     const cheapest = p.history.reduce((min,h)=> unitPrice(h)<unitPrice(min)?h:min, p.history[0]);
     let changeTag = `<span class="tag neutral">Sin histórico suficiente</span>`;
@@ -863,11 +880,12 @@ function renderCompras(){
   document.getElementById("shopList").innerHTML = list.length ? list.map(p=>{
     const low = p.stock <= p.threshold;
     const safeName = escapeHtml(p.name);
+    const last = lastEntry(p);
     return `
     <div class="shop-item">
       <div>
         <strong>${safeName}</strong>
-        <div class="why">${low ? `Stock: ${p.stock} ${escapeHtml(p.unit)} (mín. ${p.threshold})` : "Rotación atrasada"} · ${escapeHtml(lastEntry(p).store)}</div>
+        <div class="why">${low ? `Stock: ${p.stock} ${escapeHtml(p.unit)} (mín. ${p.threshold})` : "Rotación atrasada"}${last?" · "+escapeHtml(last.store):" · Sin compras registradas todavía"}</div>
       </div>
       <button class="btn secondary" data-buy="${escapeHtml(p.id)}" aria-label="Marcar ${safeName} como comprado">Marcar comprado</button>
     </div>`;
